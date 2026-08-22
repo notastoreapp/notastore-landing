@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catalog — NotAStore</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Inter, -apple-system, sans-serif;
+      background: #0a0a0f;
+      color: #fff;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font-family: inherit; }
+    button { cursor: pointer; }
+    img { display: block; max-width: 100%; }
+
+    .gate, .app { min-height: 100dvh; }
+    .hidden { display: none !important; }
+
+    .gate {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+    }
+    .gate__card {
+      width: 100%;
+      max-width: 420px;
+      padding: 36px 32px;
+      background: #111118;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+    }
+    .gate__brand {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: #a78bfa;
+    }
+    .gate__title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .gate__sub {
+      color: rgba(255,255,255,0.55);
+      font-size: 0.92rem;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 12px 18px;
+      transition: transform 0.12s, opacity 0.12s;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn:not(:disabled):hover { transform: translateY(-1px); }
+    .btn--primary { background: #fff; color: #000; width: 100%; position: relative; z-index: 2; pointer-events: auto; }
+    .btn--ghost {
+      background: transparent;
+      color: rgba(255,255,255,0.7);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .btn--danger { background: rgba(244,63,94,0.15); color: #fb7185; }
+    .btn--accent { background: #7c5cff; color: #fff; }
+    .error {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(244,63,94,0.12);
+      color: #fb7185;
+      font-size: 0.85rem;
+      line-height: 1.45;
+    }
+    .hint {
+      margin-top: 18px;
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.4);
+      line-height: 1.5;
+    }
+
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: rgba(10,10,15,0.92);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(16px);
+    }
+    .top__brand {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800;
+    }
+    .top__brand span { color: #a78bfa; }
+    .top__meta { display: flex; align-items: center; gap: 12px; font-size: 0.82rem; color: rgba(255,255,255,0.55); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 380px) 1fr;
+      min-height: calc(100dvh - 61px);
+    }
+    .list {
+      border-right: 1px solid rgba(255,255,255,0.06);
+      padding: 20px;
+    }
+    .list__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .list__head h2 { font-size: 1rem; font-weight: 700; }
+    .filters { display: flex; gap: 8px; margin-bottom: 16px; }
+    select, input[type="text"], input[type="number"], input[type="email"], input[type="password"] {
+      background: #16161f;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      width: 100%;
+    }
+    .filters select { flex: 1; }
+
+    .card {
+      display: flex;
+      gap: 12px;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      margin-bottom: 8px;
+      text-align: left;
+      background: transparent;
+      color: inherit;
+      width: 100%;
+    }
+    .card:hover { background: rgba(255,255,255,0.03); }
+    .card.is-active { border-color: rgba(124,92,255,0.5); background: rgba(124,92,255,0.08); }
+    .card img {
+      width: 56px;
+      height: 56px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #1a1a24;
+      flex-shrink: 0;
+    }
+    .card__name { font-size: 0.88rem; font-weight: 600; }
+    .card__meta { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin-top: 4px; }
+    .pill {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 6px;
+      border-radius: 999px;
+      margin-left: 6px;
+    }
+    .pill--published { background: rgba(16,185,129,0.18); color: #34d399; }
+    .pill--draft { background: rgba(251,191,36,0.18); color: #fbbf24; }
+    .pill--archived { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); }
+
+    .editor { padding: 28px 32px 48px; max-width: 720px; }
+    .editor h2 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.35rem;
+      margin-bottom: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field--full { grid-column: 1 / -1; }
+    label { font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.55); }
+    .preview {
+      width: 100%;
+      aspect-ratio: 1;
+      max-width: 280px;
+      object-fit: cover;
+      border-radius: 16px;
+      background: #16161f;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .toast {
+      margin-top: 16px;
+      font-size: 0.85rem;
+      color: #34d399;
+    }
+    .empty { color: rgba(255,255,255,0.4); font-size: 0.88rem; padding: 12px 0; }
+    .file-hint { font-size: 0.75rem; color: rgba(255,255,255,0.4); line-height: 1.4; }
+
+    @media (max-width: 840px) {
+      .layout { grid-template-columns: 1fr; }
+      .list { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.06); }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="gate" class="gate">
+    <div class="gate__card">
+      <div class="gate__brand">✦ NotAStore</div>
+      <h1 class="gate__title">Catalog admin</h1>
+      <p class="gate__sub">Publish products to the mobile app. Photos go to Supabase Storage — not GitHub.</p>
+      <form id="gate-form" method="post" action="#" onsubmit="return false;">
+        <div class="field">
+          <label for="gate-email">Email</label>
+          <input id="gate-email" type="email" autocomplete="username" required />
+        </div>
+        <div class="field" style="margin-top:12px">
+          <label for="gate-password">Password</label>
+          <input id="gate-password" type="password" autocomplete="current-password" required />
+        </div>
+        <button type="button" class="btn btn--primary" id="sign-in-btn" style="margin-top:18px">Sign in</button>
+      </form>
+      <p class="hint" id="gate-hint">Create this login in Supabase → Authentication → Users (email + password), then run <code>update public.profiles set is_admin = true where email = 'you@email.com';</code></p>
+      <div id="gate-error" class="error hidden"></div>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <header class="top">
+      <div class="top__brand"><span>✦</span> Catalog</div>
+      <div class="top__meta">
+        <span id="who"></span>
+        <button type="button" class="btn btn--ghost" id="sign-out">Sign out</button>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="list">
+        <div class="list__head">
+          <h2>Products</h2>
+          <button type="button" class="btn btn--accent" id="new-btn">New</button>
+        </div>
+        <div class="filters">
+          <select id="filter-category">
+            <option value="">All categories</option>
+            <option value="handbags">Handbags</option>
+            <option value="fashion">Fashion</option>
+            <option value="cars">Cars</option>
+            <option value="homes">Homes</option>
+            <option value="travel">Travel</option>
+            <option value="gaming">Gaming</option>
+          </select>
+          <select id="filter-status">
+            <option value="">All statuses</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+        <div id="product-list"></div>
+      </aside>
+      <main class="editor">
+        <h2 id="editor-title">New product</h2>
+        <form id="product-form">
+          <div class="grid">
+            <div class="field field--full">
+              <label for="f-name">Name</label>
+              <input id="f-name" name="name" type="text" required maxlength="120" placeholder="Structured Leather Tote" />
+            </div>
+            <div class="field">
+              <label for="f-id">ID (slug)</label>
+              <input id="f-id" name="id" type="text" required maxlength="80" placeholder="leather-tote" />
+            </div>
+            <div class="field">
+              <label for="f-brand">Brand</label>
+              <input id="f-brand" name="brand" type="text" maxlength="80" placeholder="Maison Atelier" />
+            </div>
+            <div class="field">
+              <label for="f-price">Price (NAS)</label>
+              <input id="f-price" name="price" type="number" min="0" step="1" required value="0" />
+            </div>
+            <div class="field">
+              <label for="f-category">Category</label>
+              <select id="f-category" name="category">
+                <option value="handbags">handbags</option>
+                <option value="fashion">fashion</option>
+                <option value="cars">cars</option>
+                <option value="homes">homes</option>
+                <option value="travel">travel</option>
+                <option value="gaming">gaming</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-status">Status</label>
+              <select id="f-status" name="status">
+                <option value="draft">draft</option>
+                <option value="published">published</option>
+                <option value="archived">archived</option>
+              </select>
+            </div>
+            <div class="field field--full">
+              <label for="f-image">Product photo</label>
+              <input id="f-image" name="imageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+              <p id="image-hint" class="file-hint">Resized to 1600px WebP before upload. Camera originals are fine.</p>
+            </div>
+            <div class="field field--full">
+              <img id="f-preview" class="preview hidden" alt="Product preview" />
+            </div>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn btn--primary" id="save-btn" style="width:auto">Save</button>
+            <button type="button" class="btn btn--danger hidden" id="delete-btn">Delete</button>
+          </div>
+          <p id="form-msg" class="toast hidden"></p>
+          <p id="form-error" class="error hidden"></p>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <script src="./vendor/supabase.js?v=6"></script>
+  <script src="./config.js?v=6"></script>
+  <script src="./app.js?v=6"></script>
+</body>
+</html>
