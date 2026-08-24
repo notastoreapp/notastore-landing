@@ -6,10 +6,12 @@
   <title>Catalog — NotAStore</title>
   <meta name="robots" content="noindex, nofollow" />
   <meta name="theme-color" content="#0a0a0f" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>" />
+  <link rel="icon" type="image/png" href="/assets/favicon.png" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./product-media.css?v=1" />
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -22,6 +24,34 @@
     button, input, select { font-family: inherit; }
     button { cursor: pointer; }
     img { display: block; max-width: 100%; }
+    :focus-visible {
+      outline: 2px solid #a78bfa;
+      outline-offset: 2px;
+    }
+    .skip {
+      position: absolute;
+      left: 12px;
+      top: -48px;
+      z-index: 100;
+      padding: 8px 12px;
+      background: #7c5cff;
+      color: #fff;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .skip:focus { top: 12px; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
 
     .gate, .app { min-height: 100dvh; }
     .hidden { display: none !important; }
@@ -41,11 +71,18 @@
       border-radius: 20px;
     }
     .gate__brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       font-family: 'Plus Jakarta Sans', sans-serif;
       font-weight: 800;
       font-size: 1.1rem;
       margin-bottom: 8px;
-      color: #a78bfa;
+      color: #fff;
+    }
+    .gate__brand img {
+      width: 32px;
+      height: auto;
     }
     .gate__title {
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -112,31 +149,127 @@
       backdrop-filter: blur(16px);
     }
     .top__brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       font-family: 'Plus Jakarta Sans', sans-serif;
       font-weight: 800;
+      font-size: 1rem;
     }
-    .top__brand span { color: #a78bfa; }
+    .top__brand img { width: 26px; height: auto; }
     .top__meta { display: flex; align-items: center; gap: 12px; font-size: 0.82rem; color: rgba(255,255,255,0.55); }
 
     .layout {
       display: grid;
-      grid-template-columns: minmax(280px, 380px) 1fr;
+      grid-template-columns: 240px minmax(260px, 360px) 1fr;
       min-height: calc(100dvh - 61px);
+    }
+    .folders {
+      border-right: 1px solid rgba(255,255,255,0.06);
+      padding: 20px 12px;
+      overflow-y: auto;
+    }
+    .folders__title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+    .folders__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 8px;
+      margin-bottom: 6px;
+    }
+    .folders__head .btn { padding: 6px 10px; font-size: 0.75rem; width: auto; }
+    .add-folder {
+      margin: 0 8px 12px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      background: #111118;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .add-folder .btn { width: auto; }
+    .add-folder__actions { display: flex; gap: 8px; }
+    .add-folder__id {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.4);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .folders__hint {
+      font-size: 0.72rem;
+      line-height: 1.4;
+      color: rgba(255,255,255,0.38);
+      padding: 0 8px 12px;
+    }
+    .folder {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      color: inherit;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 8px 10px;
+      margin-bottom: 2px;
+    }
+    .folder:hover { background: rgba(255,255,255,0.04); }
+    .folder.is-active {
+      background: rgba(124,92,255,0.12);
+      border-color: rgba(124,92,255,0.4);
+    }
+    .folder__glyph { font-size: 1.05rem; width: 1.4rem; text-align: center; flex-shrink: 0; }
+    .folder__body { flex: 1; min-width: 0; }
+    .folder__name { font-size: 0.86rem; font-weight: 600; }
+    .folder__meta {
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.4);
+      margin-top: 2px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .folder__count {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.45);
+      min-width: 1.5rem;
+      text-align: right;
     }
     .list {
       border-right: 1px solid rgba(255,255,255,0.06);
       padding: 20px;
+      overflow-y: auto;
     }
     .list__head {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
-    .list__head h2 { font-size: 1rem; font-weight: 700; }
-    .filters { display: flex; gap: 8px; margin-bottom: 16px; }
-    select, input[type="text"], input[type="number"], input[type="email"], input[type="password"] {
+    .crumb {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 4px;
+    }
+    .list__head h2 { font-size: 1.05rem; font-weight: 700; }
+    .filters { display: flex; gap: 8px; margin-bottom: 10px; }
+    .filters input[type="search"] { flex: 1.6; }
+    .filters select { flex: 1; }
+    .path {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.38);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      margin-bottom: 12px;
+    }
+    select, input[type="text"], input[type="number"], input[type="email"], input[type="password"], input[type="search"] {
       background: #16161f;
       color: #fff;
       border: 1px solid rgba(255,255,255,0.1);
@@ -162,14 +295,6 @@
     }
     .card:hover { background: rgba(255,255,255,0.03); }
     .card.is-active { border-color: rgba(124,92,255,0.5); background: rgba(124,92,255,0.08); }
-    .card img {
-      width: 56px;
-      height: 56px;
-      object-fit: cover;
-      border-radius: 8px;
-      background: #1a1a24;
-      flex-shrink: 0;
-    }
     .card__name { font-size: 0.88rem; font-weight: 600; }
     .card__meta { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin-top: 4px; }
     .pill {
@@ -200,15 +325,6 @@
     .field { display: flex; flex-direction: column; gap: 6px; }
     .field--full { grid-column: 1 / -1; }
     label { font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.55); }
-    .preview {
-      width: 100%;
-      aspect-ratio: 1;
-      max-width: 280px;
-      object-fit: cover;
-      border-radius: 16px;
-      background: #16161f;
-      border: 1px solid rgba(255,255,255,0.08);
-    }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
     .toast {
       margin-top: 16px;
@@ -218,8 +334,18 @@
     .empty { color: rgba(255,255,255,0.4); font-size: 0.88rem; padding: 12px 0; }
     .file-hint { font-size: 0.75rem; color: rgba(255,255,255,0.4); line-height: 1.4; }
 
-    @media (max-width: 840px) {
+    @media (max-width: 1100px) {
       .layout { grid-template-columns: 1fr; }
+      .folders {
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 14px 16px;
+      }
+      .folders__title, .folders__hint, .folders__head, .add-folder { width: 100%; }
+      .folder { width: auto; margin-bottom: 0; }
       .list { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.06); }
       .grid { grid-template-columns: 1fr; }
     }
@@ -228,9 +354,12 @@
 <body>
   <div id="gate" class="gate">
     <div class="gate__card">
-      <div class="gate__brand">✦ NotAStore</div>
+      <div class="gate__brand">
+        <img src="/assets/logo-mark.png" width="32" height="25" alt="" />
+        NotAStore
+      </div>
       <h1 class="gate__title">Catalog admin</h1>
-      <p class="gate__sub">Publish products to the mobile app. Photos go to Supabase Storage — not GitHub.</p>
+      <p class="gate__sub">Publish products into the same folders the shopper app uses. Photos go to Supabase Storage — not GitHub.</p>
       <form id="gate-form" method="post" action="#" onsubmit="return false;">
         <div class="field">
           <label for="gate-email">Email</label>
@@ -248,37 +377,54 @@
   </div>
 
   <div id="app" class="app hidden">
+    <a class="skip" href="#product-form">Skip to product editor</a>
     <header class="top">
-      <div class="top__brand"><span>✦</span> Catalog</div>
+      <h1 class="top__brand"><img src="/assets/logo-mark.png" width="26" height="20" alt="" /> Catalog</h1>
       <div class="top__meta">
         <span id="who"></span>
         <button type="button" class="btn btn--ghost" id="sign-out">Sign out</button>
       </div>
     </header>
     <div class="layout">
+      <nav class="folders" aria-label="Catalog folders">
+        <div class="folders__head">
+          <h2 class="folders__title">Folders</h2>
+          <button type="button" class="btn btn--ghost" id="add-folder-btn">Add</button>
+        </div>
+        <p class="folders__hint">Same departments as the app. A folder appears in the shop after you publish something in it.</p>
+        <form id="add-folder-form" class="add-folder hidden">
+          <label for="folder-label">New folder name</label>
+          <input id="folder-label" name="folderLabel" type="text" maxlength="40" placeholder="Jewelry" autocomplete="off" />
+          <p class="add-folder__id" id="folder-id-preview">Stores as product-images/jewelry/</p>
+          <div class="add-folder__actions">
+            <button type="submit" class="btn btn--accent" id="add-folder-save">Create folder</button>
+            <button type="button" class="btn btn--ghost" id="add-folder-cancel">Cancel</button>
+          </div>
+          <p id="folder-form-error" class="error hidden" role="alert"></p>
+        </form>
+        <div id="folder-list"></div>
+      </nav>
       <aside class="list">
         <div class="list__head">
-          <h2>Products</h2>
+          <div>
+            <p class="crumb" id="list-crumb">Catalog / All</p>
+            <h2 id="list-title">All products</h2>
+          </div>
           <button type="button" class="btn btn--accent" id="new-btn">New</button>
         </div>
         <div class="filters">
-          <select id="filter-category">
-            <option value="">All categories</option>
-            <option value="handbags">Handbags</option>
-            <option value="fashion">Fashion</option>
-            <option value="cars">Cars</option>
-            <option value="homes">Homes</option>
-            <option value="travel">Travel</option>
-            <option value="gaming">Gaming</option>
-          </select>
-          <select id="filter-status">
+          <label class="sr-only" for="filter-search">Search name or brand</label>
+          <input id="filter-search" type="search" placeholder="Search name or brand" autocomplete="off" />
+          <label class="sr-only" for="filter-status">Filter by status</label>
+          <select id="filter-status" aria-label="Filter by status">
             <option value="">All statuses</option>
             <option value="published">Published</option>
             <option value="draft">Draft</option>
             <option value="archived">Archived</option>
           </select>
         </div>
-        <div id="product-list"></div>
+        <p class="path" id="folder-path">product-images/</p>
+        <div id="product-list" role="list" aria-live="polite"></div>
       </aside>
       <main class="editor">
         <h2 id="editor-title">New product</h2>
@@ -301,15 +447,9 @@
               <input id="f-price" name="price" type="number" min="0" step="1" required value="0" />
             </div>
             <div class="field">
-              <label for="f-category">Category</label>
-              <select id="f-category" name="category">
-                <option value="handbags">handbags</option>
-                <option value="fashion">fashion</option>
-                <option value="cars">cars</option>
-                <option value="homes">homes</option>
-                <option value="travel">travel</option>
-                <option value="gaming">gaming</option>
-              </select>
+              <label for="f-category">Folder</label>
+              <select id="f-category" name="category"></select>
+              <p id="storage-path" class="file-hint">Stores at product-images/handbags/</p>
             </div>
             <div class="field">
               <label for="f-status">Status</label>
@@ -321,26 +461,30 @@
             </div>
             <div class="field field--full">
               <label for="f-image">Product photo</label>
-              <input id="f-image" name="imageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
-              <p id="image-hint" class="file-hint">Resized to 1600px WebP before upload. Camera originals are fine.</p>
+              <input id="f-image" name="imageFile" type="file" accept="image/*" />
+              <p id="image-hint" class="file-hint">Any format and resolution. Compressed for storage; the app crops every photo to the same square.</p>
             </div>
             <div class="field field--full">
-              <img id="f-preview" class="preview hidden" alt="Product preview" />
+              <figure id="f-preview-frame" class="media-frame media-frame--preview hidden">
+                <img id="f-preview" class="media-frame__img" alt="How this photo crops in the app" />
+                <figcaption class="media-frame__caption">App crop — 1:1 cover, same as the shop grid</figcaption>
+              </figure>
             </div>
           </div>
           <div class="actions">
             <button type="submit" class="btn btn--primary" id="save-btn" style="width:auto">Save</button>
             <button type="button" class="btn btn--danger hidden" id="delete-btn">Delete</button>
           </div>
-          <p id="form-msg" class="toast hidden"></p>
-          <p id="form-error" class="error hidden"></p>
+          <p id="form-msg" class="toast hidden" role="status"></p>
+          <p id="form-error" class="error hidden" role="alert"></p>
         </form>
       </main>
     </div>
   </div>
 
-  <script src="./vendor/supabase.js?v=6"></script>
-  <script src="./config.js?v=6"></script>
-  <script src="./app.js?v=6"></script>
+  <script src="./vendor/supabase.js?v=9"></script>
+  <script src="./config.js?v=9"></script>
+  <script src="./catalog.js?v=9"></script>
+  <script src="./app.js?v=9"></script>
 </body>
 </html>

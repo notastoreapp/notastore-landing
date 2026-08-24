@@ -1,10 +1,13 @@
-const CATEGORIES = ['handbags', 'fashion', 'cars', 'homes', 'travel', 'gaming'];
+const catalog = window.NAS_CATALOG || { defaultCategory: 'handbags', categories: [] };
+let categories = (catalog.categories || []).map(normalizeFolder);
+const DEFAULT_CATEGORY = catalog.defaultCategory || 'handbags';
 const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const TARGET_BYTES = 450 * 1024;
 const MAX_EDGE = 1600;
 const BUCKET = 'product-images';
-const IMAGE_HINT_DEFAULT = 'Resized to 1600px WebP before upload. Camera originals are fine.';
+const IMAGE_HINT_DEFAULT =
+  'Any format and resolution. Compressed for storage; the app crops every photo to the same square.';
 
 const config = window.NAS_ADMIN || {};
 let db = null;
@@ -28,7 +31,17 @@ const els = {
   signOut: document.getElementById('sign-out'),
   who: document.getElementById('who'),
   list: document.getElementById('product-list'),
-  filterCategory: document.getElementById('filter-category'),
+  folderList: document.getElementById('folder-list'),
+  addFolderBtn: document.getElementById('add-folder-btn'),
+  addFolderForm: document.getElementById('add-folder-form'),
+  folderLabel: document.getElementById('folder-label'),
+  folderIdPreview: document.getElementById('folder-id-preview'),
+  addFolderCancel: document.getElementById('add-folder-cancel'),
+  folderFormError: document.getElementById('folder-form-error'),
+  listTitle: document.getElementById('list-title'),
+  listCrumb: document.getElementById('list-crumb'),
+  folderPath: document.getElementById('folder-path'),
+  filterSearch: document.getElementById('filter-search'),
   filterStatus: document.getElementById('filter-status'),
   newBtn: document.getElementById('new-btn'),
   form: document.getElementById('product-form'),
@@ -38,9 +51,11 @@ const els = {
   brand: document.getElementById('f-brand'),
   price: document.getElementById('f-price'),
   category: document.getElementById('f-category'),
+  storagePath: document.getElementById('storage-path'),
   status: document.getElementById('f-status'),
   image: document.getElementById('f-image'),
   preview: document.getElementById('f-preview'),
+  previewFrame: document.getElementById('f-preview-frame'),
   imageHint: document.getElementById('image-hint'),
   saveBtn: document.getElementById('save-btn'),
   deleteBtn: document.getElementById('delete-btn'),
@@ -50,10 +65,57 @@ const els = {
 
 let products = [];
 let selectedId = null;
+let selectedFolder = '';
 let existingImageUrl = null;
 let idLocked = false;
 let pendingImage = null;
 let previewUrl = null;
+
+function normalizeFolder(row) {
+  if (!row?.id && !row?.label) return null;
+  const id = String(row.id || '').trim();
+  return {
+    id,
+    label: row.label || id,
+    hint: row.hint || '',
+    glyph: row.glyph || '📁',
+    icon: row.icon || 'grid',
+    sortOrder: Number(row.sort_order ?? row.sortOrder ?? 100) || 100,
+  };
+}
+
+function categoryIds() {
+  return categories.map((item) => item.id);
+}
+
+function getCategory(id) {
+  return categories.find((item) => item.id === id) || categories[0] || { id: DEFAULT_CATEGORY, label: DEFAULT_CATEGORY };
+}
+
+function categoryLabel(id) {
+  return getCategory(id).label || id || DEFAULT_CATEGORY;
+}
+
+function storageFolder(categoryId) {
+  return `product-images/${categoryId || DEFAULT_CATEGORY}/`;
+}
+
+function fillCategorySelect() {
+  const previous = els.category.value;
+  els.category.replaceChildren();
+  categories.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.textContent = `${item.label}  (${item.id})`;
+    els.category.appendChild(option);
+  });
+  if (previous && categoryIds().includes(previous)) els.category.value = previous;
+  updateStorageHint();
+}
+
+function updateStorageHint() {
+  setText(els.storagePath, `Stores at ${storageFolder(els.category.value)}`);
+}
 
 function show(el) {
   el.classList.remove('hidden');
@@ -80,14 +142,26 @@ function canvasToBlob(canvas, type, quality) {
   });
 }
 
+async function decodeBitmap(file) {
+  try {
+    return await createImageBitmap(file, { imageOrientation: 'from-image' });
+  } catch {
+    try {
+      return await createImageBitmap(file);
+    } catch {
+      throw new Error(
+        'Could not read this photo. Try JPEG, PNG, or WebP. HEIC works in Safari.'
+      );
+    }
+  }
+}
+
 async function compressImage(file) {
   if (file.size > MAX_SOURCE_BYTES) {
     throw new Error('Photo is larger than 25MB. Pick a smaller file.');
   }
 
-  const bitmap = await createImageBitmap(file).catch(() => {
-    throw new Error('Could not read this photo. Use JPEG, PNG, or WebP.');
-  });
+  const bitmap = await decodeBitmap(file);
   try {
     const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement('canvas');
@@ -167,9 +241,10 @@ function resetForm(product) {
     els.name.value = '';
     els.brand.value = '';
     els.price.value = '0';
-    els.category.value = 'handbags';
+    els.category.value = selectedFolder || DEFAULT_CATEGORY;
     els.status.value = 'published';
-    hide(els.preview);
+    updateStorageHint();
+    hide(els.previewFrame);
     els.preview.removeAttribute('src');
     hide(els.deleteBtn);
     return;
@@ -184,35 +259,111 @@ function resetForm(product) {
   els.name.value = product.name || '';
   els.brand.value = product.brand || '';
   els.price.value = String(product.price ?? 0);
-  els.category.value = CATEGORIES.includes(product.category) ? product.category : 'handbags';
+  els.category.value = categoryIds().includes(product.category) ? product.category : DEFAULT_CATEGORY;
   els.status.value = product.status || 'draft';
+  updateStorageHint();
   if (product.image) {
     els.preview.src = product.image;
-    show(els.preview);
+    show(els.previewFrame);
   } else {
-    hide(els.preview);
+    hide(els.previewFrame);
     els.preview.removeAttribute('src');
   }
   show(els.deleteBtn);
 }
 
 function filteredProducts() {
-  const category = els.filterCategory.value;
+  const folder = selectedFolder;
   const status = els.filterStatus.value;
+  const query = (els.filterSearch.value || '').trim().toLowerCase();
   return products.filter((item) => {
-    if (category && item.category !== category) return false;
+    if (folder && item.category !== folder) return false;
     if (status && item.status !== status) return false;
+    if (query) {
+      const hay = `${item.name || ''} ${item.brand || ''} ${item.id || ''}`.toLowerCase();
+      if (!hay.includes(query)) return false;
+    }
     return true;
+  });
+}
+
+function folderCounts() {
+  const counts = { '': products.length };
+  categoryIds().forEach((id) => {
+    counts[id] = 0;
+  });
+  products.forEach((item) => {
+    const id = item.category || DEFAULT_CATEGORY;
+    counts[id] = (counts[id] || 0) + 1;
+  });
+  return counts;
+}
+
+function renderFolders() {
+  els.folderList.replaceChildren();
+  const counts = folderCounts();
+  const extraIds = Object.keys(counts).filter((id) => id && !categoryIds().includes(id));
+  const extra = extraIds.map((id) => ({ id, label: id, glyph: '📁', hint: '' }));
+  const rows = [{ id: '', label: 'All products', hint: 'Every folder', glyph: '▦' }, ...categories, ...extra];
+
+  rows.forEach((item) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'folder' + (item.id === selectedFolder ? ' is-active' : '');
+    btn.setAttribute('aria-current', item.id === selectedFolder ? 'page' : 'false');
+
+    const glyph = document.createElement('span');
+    glyph.className = 'folder__glyph';
+    glyph.setAttribute('aria-hidden', 'true');
+    glyph.textContent = item.glyph || '📁';
+
+    const body = document.createElement('span');
+    body.className = 'folder__body';
+    const name = document.createElement('span');
+    name.className = 'folder__name';
+    name.textContent = item.label;
+    const meta = document.createElement('span');
+    meta.className = 'folder__meta';
+    meta.textContent = item.id ? `${item.id}/` : 'product-images/';
+    body.appendChild(name);
+    body.appendChild(meta);
+
+    const count = document.createElement('span');
+    count.className = 'folder__count';
+    count.textContent = String(counts[item.id] ?? 0);
+
+    btn.appendChild(glyph);
+    btn.appendChild(body);
+    btn.appendChild(count);
+    btn.addEventListener('click', () => {
+      selectedFolder = item.id;
+      if (!idLocked) {
+        els.category.value = item.id || DEFAULT_CATEGORY;
+        updateStorageHint();
+      }
+      renderFolders();
+      renderList();
+    });
+    els.folderList.appendChild(btn);
   });
 }
 
 function renderList() {
   els.list.replaceChildren();
+  const folder = selectedFolder ? getCategory(selectedFolder) : null;
+  const title = folder ? folder.label : 'All products';
+  setText(els.listTitle, title);
+  setText(els.listCrumb, folder ? `Catalog / ${folder.label}` : 'Catalog / All');
+  setText(els.folderPath, folder ? storageFolder(folder.id) : 'product-images/');
+  els.newBtn.setAttribute('aria-label', folder ? `New product in ${folder.label}` : 'New product');
+
   const rows = filteredProducts();
   if (!rows.length) {
     const empty = document.createElement('p');
     empty.className = 'empty';
-    empty.textContent = 'No products match these filters.';
+    empty.textContent = folder
+      ? `Nothing in ${folder.label} yet. New products land in this folder.`
+      : 'No products match these filters.';
     els.list.appendChild(empty);
     return;
   }
@@ -221,10 +372,16 @@ function renderList() {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'card' + (product.id === selectedId ? ' is-active' : '');
+    btn.setAttribute('role', 'listitem');
+
+    const frame = document.createElement('span');
+    frame.className = 'media-frame media-frame--thumb' + (product.image ? '' : ' is-empty');
 
     const img = document.createElement('img');
+    img.className = 'media-frame__img';
     img.alt = '';
     if (product.image) img.src = product.image;
+    frame.appendChild(img);
 
     const body = document.createElement('div');
     const name = document.createElement('div');
@@ -238,11 +395,11 @@ function renderList() {
 
     const meta = document.createElement('div');
     meta.className = 'card__meta';
-    meta.textContent = `${product.category || 'handbags'} · NAS ${Number(product.price || 0).toLocaleString('en-US')}`;
+    meta.textContent = `${categoryLabel(product.category)} · NAS ${Number(product.price || 0).toLocaleString('en-US')}`;
 
     body.appendChild(name);
     body.appendChild(meta);
-    btn.appendChild(img);
+    btn.appendChild(frame);
     btn.appendChild(body);
     btn.addEventListener('click', () => {
       resetForm(product);
@@ -256,6 +413,7 @@ async function loadProducts() {
   const { data, error } = await db.from('products').select('*').order('updated_at', { ascending: false });
   if (error) throw error;
   products = data || [];
+  renderFolders();
   renderList();
 }
 
@@ -283,11 +441,24 @@ async function requireAdmin(session) {
   return data;
 }
 
+async function loadCategories() {
+  const { data, error } = await db.from('categories').select('*').order('sort_order').order('label');
+  if (error) {
+    categories = (catalog.categories || []).map(normalizeFolder).filter(Boolean);
+    return;
+  }
+  if (data?.length) {
+    categories = data.map(normalizeFolder).filter(Boolean);
+  }
+}
+
 async function enterApp(session) {
   const profile = await requireAdmin(session);
   hide(els.gate);
   show(els.app);
   setText(els.who, profile.email || session.user.email || '');
+  await loadCategories();
+  fillCategorySelect();
   resetForm(null);
   await loadProducts();
 }
@@ -349,8 +520,75 @@ els.newBtn.addEventListener('click', () => {
   renderList();
 });
 
-els.filterCategory.addEventListener('change', renderList);
+function updateFolderPreview() {
+  const id = slugify(els.folderLabel.value) || 'folder';
+  setText(els.folderIdPreview, `Stores as product-images/${id}/`);
+}
+
+function openAddFolder() {
+  hide(els.folderFormError);
+  els.addFolderForm.classList.remove('hidden');
+  els.folderLabel.value = '';
+  updateFolderPreview();
+  els.folderLabel.focus();
+}
+
+function closeAddFolder() {
+  hide(els.folderFormError);
+  els.addFolderForm.classList.add('hidden');
+  els.folderLabel.value = '';
+}
+
+els.addFolderBtn.addEventListener('click', () => {
+  if (els.addFolderForm.classList.contains('hidden')) openAddFolder();
+  else closeAddFolder();
+});
+els.addFolderCancel.addEventListener('click', closeAddFolder);
+els.folderLabel.addEventListener('input', updateFolderPreview);
+els.addFolderForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  hide(els.folderFormError);
+  const label = els.folderLabel.value.trim();
+  const id = slugify(label);
+  if (!id) {
+    setText(els.folderFormError, 'Enter a folder name.');
+    show(els.folderFormError);
+    return;
+  }
+  if (categoryIds().includes(id)) {
+    setText(els.folderFormError, `“${id}” already exists.`);
+    show(els.folderFormError);
+    return;
+  }
+
+  const sortOrder = categories.reduce((max, item) => Math.max(max, item.sortOrder || 0), 0) + 10;
+  const row = { id, label, hint: null, glyph: '📁', icon: 'grid', sort_order: sortOrder };
+  const { data, error } = await db.from('categories').insert(row).select('*').single();
+  if (error) {
+    const missing = /does not exist|schema cache|42P01/i.test(error.message || '');
+    setText(
+      els.folderFormError,
+      missing
+        ? 'Run catalog_admin.sql in the Supabase SQL Editor to enable custom folders.'
+        : error.message || 'Could not create this folder.'
+    );
+    show(els.folderFormError);
+    return;
+  }
+
+  categories.push(normalizeFolder(data || row));
+  categories.sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label));
+  fillCategorySelect();
+  selectedFolder = id;
+  closeAddFolder();
+  resetForm(null);
+  renderFolders();
+  renderList();
+});
+
+els.filterSearch.addEventListener('input', renderList);
 els.filterStatus.addEventListener('change', renderList);
+els.category.addEventListener('change', updateStorageHint);
 
 els.name.addEventListener('input', () => {
   if (!idLocked) els.id.value = slugify(els.name.value);
@@ -371,7 +609,7 @@ els.image.addEventListener('change', async () => {
     pendingImage = await compressImage(file);
     previewUrl = URL.createObjectURL(pendingImage);
     els.preview.src = previewUrl;
-    show(els.preview);
+    show(els.previewFrame);
     setText(
       els.imageHint,
       `${formatBytes(file.size)} original → ${formatBytes(pendingImage.size)} uploaded`
@@ -417,12 +655,14 @@ els.form.addEventListener('submit', async (event) => {
     else products.unshift(data);
 
     resetForm(data);
+    renderFolders();
     renderList();
     const sizeNote = file ? ` Photo stored at ${formatBytes(file.size)}.` : '';
+    const folderName = categoryLabel(data.category);
     showFormMsg(
       data.status === 'published'
-        ? `Published. Handbags show in the app immediately — no release needed.${sizeNote}`
-        : `Saved.${sizeNote}`
+        ? `Published to ${folderName}. It shows in the app immediately — no release needed.${sizeNote}`
+        : `Saved in ${folderName}.${sizeNote}`
     );
   } catch (err) {
     showFormError(err.message || 'Could not save this product.');
@@ -441,11 +681,13 @@ els.deleteBtn.addEventListener('click', async () => {
   }
   products = products.filter((item) => item.id !== selectedId);
   resetForm(null);
+  renderFolders();
   renderList();
   showFormMsg('Deleted.');
 });
 
 (async function boot() {
+  fillCategorySelect();
   if (!db) {
     showGateError('Admin failed to load the auth library. Refresh http://localhost:3000/admin/');
     return;

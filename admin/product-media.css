@@ -1,0 +1,137 @@
+/**
+ * Product media — display contract
+ * =================================
+ *
+ * Admin accepts photos in any format and resolution (JPEG, PNG, WebP, GIF,
+ * HEIC when the browser can decode it, camera originals, portrait or landscape).
+ * Storage may keep that native aspect ratio after a size-only compress.
+ *
+ * Cohesion happens here, at display time — not by forcing operators to crop.
+ * The shopper app mirrors these rules in
+ * `NotAStoreMobile/src/shared/ui/ProductMedia.js`.
+ *
+ * If a new surface shows a catalog photo, it must use these classes (web)
+ * or the ProductMedia component (React Native). Do not set object-fit /
+ * resizeMode ad hoc on product images.
+ *
+ *
+ * Contract
+ * --------
+ * 1. Frame is always the same shape. Grid cards and the admin preview are
+ *    1:1. List thumbs are also 1:1, just smaller.
+ * 2. The photo FILLS the frame (object-fit: cover). Extra pixels are cropped.
+ *    Never use `contain` on product photos — letterboxing (bars, mixed
+ *    backgrounds) is what makes a mixed-resolution catalog look messy.
+ * 3. Never use `fill` / stretch. That warps bags.
+ * 4. Crop origin is slightly above center (50% 42%). Product shots and
+ *    lifestyle photos usually keep the bag in the upper-middle of the frame.
+ * 5. The frame has a solid fill. Transparent PNGs, slow loads, and missing
+ *    URLs all show the same surface instead of a hole in the grid.
+ * 6. Overflow is clipped. Radius lives on the FRAME, not the img, so cover
+ *    crop and rounded corners stay aligned.
+ *
+ *
+ * Why not crop to 1:1 at upload?
+ * ------------------------------
+ * The file on Storage stays close to what was shot. A later product-detail
+ * view can show more of a landscape photo. The grid still looks uniform
+ * because every tile uses this frame.
+ *
+ *
+ * Tokens (keep in sync with ProductMedia.js)
+ * ------------------------------------------
+ */
+
+:root {
+  --nas-media-ratio: 1 / 1;
+  --nas-media-fit: cover;
+  --nas-media-position: 50% 42%;
+  --nas-media-radius-card: 12px;
+  --nas-media-radius-thumb: 8px;
+  --nas-media-radius-preview: 16px;
+  --nas-media-thumb-size: 56px;
+  --nas-media-preview-max: 280px;
+  /* Admin is a dark console. The app uses #F7F7F7 — same role, different theme. */
+  --nas-media-fill: #16161f;
+}
+
+/**
+ * Frame — the crop window. Size the FRAME, never the bitmap.
+ * Children: one img.media-frame__img, optional caption.
+ */
+.media-frame {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  margin: 0;
+  background: var(--nas-media-fill);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.media-frame.is-empty {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent),
+    var(--nas-media-fill);
+}
+
+.media-frame__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: var(--nas-media-fit);
+  object-position: var(--nas-media-position);
+  /* Avoid the browser upscaling with a crunchy nearest-neighbor look. */
+  image-rendering: auto;
+}
+
+/**
+ * Shop-grid card and admin WYSIWYG preview.
+ * This is the crop shoppers see on Home.
+ */
+.media-frame--card,
+.media-frame--preview {
+  width: 100%;
+  aspect-ratio: var(--nas-media-ratio);
+  border-radius: var(--nas-media-radius-card);
+}
+
+.media-frame--preview {
+  max-width: var(--nas-media-preview-max);
+  border-radius: var(--nas-media-radius-preview);
+}
+
+.media-frame--preview .media-frame__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.media-frame__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 10px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.78);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
+  pointer-events: none;
+}
+
+/**
+ * Product list row (admin) and order history (app uses 72px, same ratio).
+ */
+.media-frame--thumb {
+  width: var(--nas-media-thumb-size);
+  height: var(--nas-media-thumb-size);
+  border-radius: var(--nas-media-radius-thumb);
+}
+
+.media-frame--thumb .media-frame__img {
+  width: 100%;
+  height: 100%;
+}
