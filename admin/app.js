@@ -6,8 +6,11 @@ const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const TARGET_BYTES = 450 * 1024;
 const MAX_EDGE = 1600;
 const BUCKET = 'product-images';
+const STUDIO_FILL = '#EDEBE6';
+const FRAME_RATIO = 4 / 5;
+const FRAME_INSET = 0.08;
 const IMAGE_HINT_DEFAULT =
-  'Any format and resolution. Compressed for storage; the app crops every photo to the same square.';
+  'Any format. We place it on a 4:5 studio field and compress — files stay in Supabase, not in git.';
 
 const config = window.NAS_ADMIN || {};
 let db = null;
@@ -163,11 +166,21 @@ async function compressImage(file) {
 
   const bitmap = await decodeBitmap(file);
   try {
-    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    const outH = MAX_EDGE;
+    const outW = Math.max(1, Math.round(outH * FRAME_RATIO));
     const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = STUDIO_FILL;
+    ctx.fillRect(0, 0, outW, outH);
+
+    const boxW = outW * (1 - FRAME_INSET * 2);
+    const boxH = outH * (1 - FRAME_INSET * 2);
+    const fit = Math.min(boxW / bitmap.width, boxH / bitmap.height);
+    const drawW = bitmap.width * fit;
+    const drawH = bitmap.height * fit;
+    ctx.drawImage(bitmap, (outW - drawW) / 2, (outH - drawH) / 2, drawW, drawH);
 
     let best = null;
     for (const type of ['image/webp', 'image/jpeg']) {
