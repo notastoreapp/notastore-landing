@@ -21,7 +21,7 @@
       min-height: 100dvh;
       -webkit-font-smoothing: antialiased;
     }
-    button, input, select { font-family: inherit; }
+    button, input, select, textarea { font-family: inherit; }
     button { cursor: pointer; }
     img { display: block; max-width: 100%; }
     :focus-visible {
@@ -269,7 +269,7 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       margin-bottom: 12px;
     }
-    select, input[type="text"], input[type="number"], input[type="email"], input[type="password"], input[type="search"] {
+    select, input[type="text"], input[type="number"], input[type="email"], input[type="password"], input[type="search"], textarea {
       background: #16161f;
       color: #fff;
       border: 1px solid rgba(255,255,255,0.1);
@@ -278,6 +278,7 @@
       font-size: 0.88rem;
       width: 100%;
     }
+    textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
     .filters select { flex: 1; }
 
     .card {
@@ -481,6 +482,18 @@
               <p class="file-hint">Checked pieces rotate as today’s drop. One unlocks at 16:00 UTC (noon Eastern). Unchecked items stay a normal listing.</p>
             </div>
             <div class="field field--full">
+              <label for="f-made-for">Made for</label>
+              <input id="f-made-for" name="madeFor" type="text" maxlength="160" placeholder="The day you carry a city and still look composed." />
+            </div>
+            <div class="field field--full">
+              <label for="f-material">Material</label>
+              <input id="f-material" name="material" type="text" maxlength="180" placeholder="Vegetable-tanned calf, brass hardware, cotton twill lining" />
+            </div>
+            <div class="field field--full">
+              <label for="f-story">Lookbook</label>
+              <textarea id="f-story" name="story" maxlength="800" rows="5" placeholder="The paragraph on the product page — why this object exists in a shop that never ships the real thing."></textarea>
+            </div>
+            <div class="field field--full">
               <label for="f-image">Product photo</label>
               <input id="f-image" name="imageFile" type="file" accept="image/*" />
               <p id="image-hint" class="file-hint">Any format and resolution. Compressed for storage; the app crops every photo to the same square.</p>
@@ -503,9 +516,9 @@
     </div>
   </div>
 
-  <script src="./vendor/supabase.js?v=11"></script>
-  <script src="./config.js?v=11"></script>
-  <script src="./catalog.js?v=11"></script>
-  <script src="./app.js?v=11"></script>
+  <script src="./vendor/supabase.js?v=12"></script>
+  <script src="./config.js?v=12"></script>
+  <script src="./catalog.js?v=12"></script>
+  <script src="./app.js?v=12"></script>
 </body>
 </html>

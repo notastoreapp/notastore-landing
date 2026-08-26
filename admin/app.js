@@ -57,6 +57,9 @@ const els = {
   storagePath: document.getElementById('storage-path'),
   status: document.getElementById('f-status'),
   drop: document.getElementById('f-drop'),
+  madeFor: document.getElementById('f-made-for'),
+  material: document.getElementById('f-material'),
+  story: document.getElementById('f-story'),
   image: document.getElementById('f-image'),
   preview: document.getElementById('f-preview'),
   previewFrame: document.getElementById('f-preview-frame'),
@@ -258,6 +261,9 @@ function resetForm(product) {
     els.category.value = selectedFolder || DEFAULT_CATEGORY;
     els.status.value = 'published';
     if (els.drop) els.drop.checked = false;
+    if (els.madeFor) els.madeFor.value = '';
+    if (els.material) els.material.value = '';
+    if (els.story) els.story.value = '';
     updateStorageHint();
     hide(els.previewFrame);
     els.preview.removeAttribute('src');
@@ -277,6 +283,9 @@ function resetForm(product) {
   els.category.value = categoryIds().includes(product.category) ? product.category : DEFAULT_CATEGORY;
   els.status.value = product.status || 'draft';
   if (els.drop) els.drop.checked = Boolean(product.drop);
+  if (els.madeFor) els.madeFor.value = product.made_for || product.madeFor || '';
+  if (els.material) els.material.value = product.material || '';
+  if (els.story) els.story.value = product.story || '';
   updateStorageHint();
   if (product.image) {
     els.preview.src = product.image;
@@ -667,6 +676,9 @@ els.form.addEventListener('submit', async (event) => {
       category,
       status: els.status.value,
       drop: Boolean(els.drop?.checked),
+      made_for: els.madeFor?.value.trim() || null,
+      material: els.material?.value.trim() || null,
+      story: els.story?.value.trim() || null,
       updated_at: new Date().toISOString(),
     };
 
