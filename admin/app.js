@@ -441,7 +441,7 @@ function renderList() {
 }
 
 async function loadProducts() {
-  const { data, error } = await db.from('products').select('*').order('updated_at', { ascending: false });
+  const { data, error } = await db.from('products').select('*').order('updated_at', { ascending: false }).limit(2000);
   if (error) throw error;
   products = data || [];
   renderFolders();
