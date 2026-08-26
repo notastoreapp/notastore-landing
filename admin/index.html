@@ -310,6 +310,20 @@
     .pill--published { background: rgba(16,185,129,0.18); color: #34d399; }
     .pill--draft { background: rgba(251,191,36,0.18); color: #fbbf24; }
     .pill--archived { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); }
+    .pill--drop { background: rgba(196,165,116,0.22); color: #e8d5b5; }
+    .field--check .check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.88);
+    }
+    .field--check input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #c4a574;
+    }
 
     .editor { padding: 28px 32px 48px; max-width: 720px; }
     .editor h2 {
@@ -459,6 +473,13 @@
                 <option value="archived">archived</option>
               </select>
             </div>
+            <div class="field field--full field--check">
+              <label class="check">
+                <input id="f-drop" name="drop" type="checkbox" />
+                Daily drop pool
+              </label>
+              <p class="file-hint">Checked pieces rotate as today’s drop. One unlocks at 16:00 UTC (noon Eastern). Unchecked items stay a normal listing.</p>
+            </div>
             <div class="field field--full">
               <label for="f-image">Product photo</label>
               <input id="f-image" name="imageFile" type="file" accept="image/*" />
@@ -482,9 +503,9 @@
     </div>
   </div>
 
-  <script src="./vendor/supabase.js?v=9"></script>
-  <script src="./config.js?v=9"></script>
-  <script src="./catalog.js?v=9"></script>
-  <script src="./app.js?v=9"></script>
+  <script src="./vendor/supabase.js?v=11"></script>
+  <script src="./config.js?v=11"></script>
+  <script src="./catalog.js?v=11"></script>
+  <script src="./app.js?v=11"></script>
 </body>
 </html>

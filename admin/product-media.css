@@ -22,9 +22,9 @@
   --nas-media-ratio: 4 / 5;
   --nas-media-fit: contain;
   --nas-media-position: 50% 50%;
-  --nas-media-radius-card: 0;
-  --nas-media-radius-thumb: 6px;
-  --nas-media-radius-preview: 8px;
+  --nas-media-radius-card: 16px;
+  --nas-media-radius-thumb: 12px;
+  --nas-media-radius-preview: 16px;
   --nas-media-thumb-size: 56px;
   --nas-media-preview-max: 280px;
   --nas-media-fill: #edebe6;

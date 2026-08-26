@@ -56,6 +56,7 @@ const els = {
   category: document.getElementById('f-category'),
   storagePath: document.getElementById('storage-path'),
   status: document.getElementById('f-status'),
+  drop: document.getElementById('f-drop'),
   image: document.getElementById('f-image'),
   preview: document.getElementById('f-preview'),
   previewFrame: document.getElementById('f-preview-frame'),
@@ -256,6 +257,7 @@ function resetForm(product) {
     els.price.value = '0';
     els.category.value = selectedFolder || DEFAULT_CATEGORY;
     els.status.value = 'published';
+    if (els.drop) els.drop.checked = false;
     updateStorageHint();
     hide(els.previewFrame);
     els.preview.removeAttribute('src');
@@ -274,6 +276,7 @@ function resetForm(product) {
   els.price.value = String(product.price ?? 0);
   els.category.value = categoryIds().includes(product.category) ? product.category : DEFAULT_CATEGORY;
   els.status.value = product.status || 'draft';
+  if (els.drop) els.drop.checked = Boolean(product.drop);
   updateStorageHint();
   if (product.image) {
     els.preview.src = product.image;
@@ -405,10 +408,16 @@ function renderList() {
     pill.className = 'pill pill--' + (product.status || 'draft');
     pill.textContent = product.status || 'draft';
     name.appendChild(pill);
+    if (product.drop) {
+      const dropPill = document.createElement('span');
+      dropPill.className = 'pill pill--drop';
+      dropPill.textContent = 'drop';
+      name.appendChild(dropPill);
+    }
 
     const meta = document.createElement('div');
     meta.className = 'card__meta';
-    meta.textContent = `${categoryLabel(product.category)} · NAS ${Number(product.price || 0).toLocaleString('en-US')}`;
+    meta.textContent = `${categoryLabel(product.category)} · NAS ${Math.round(Number(product.price) || 0).toLocaleString('en-US')}`;
 
     body.appendChild(name);
     body.appendChild(meta);
@@ -657,6 +666,7 @@ els.form.addEventListener('submit', async (event) => {
       image,
       category,
       status: els.status.value,
+      drop: Boolean(els.drop?.checked),
       updated_at: new Date().toISOString(),
     };
 
@@ -672,10 +682,13 @@ els.form.addEventListener('submit', async (event) => {
     renderList();
     const sizeNote = file ? ` Photo stored at ${formatBytes(file.size)}.` : '';
     const folderName = categoryLabel(data.category);
+    const dropNote = data.drop
+      ? ' In the daily drop pool — the app unlocks one flagged piece at 16:00 UTC.'
+      : '';
     showFormMsg(
       data.status === 'published'
-        ? `Published to ${folderName}. It shows in the app immediately — no release needed.${sizeNote}`
-        : `Saved in ${folderName}.${sizeNote}`
+        ? `Published to ${folderName}. It shows in the app immediately — no release needed.${sizeNote}${dropNote}`
+        : `Saved in ${folderName}.${sizeNote}${dropNote}`
     );
   } catch (err) {
     showFormError(err.message || 'Could not save this product.');
